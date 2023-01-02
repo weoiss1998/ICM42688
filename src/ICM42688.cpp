@@ -112,8 +112,8 @@ int ICM42688::setAccelRange(AccelRange range) {
       if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G) < 0) {
         return -1;
       }
-      _accelScale = G*2048.0f;
-      //_accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
+      //_accelScale = G*2048.0f;
+      _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
       break;
     }
   }
