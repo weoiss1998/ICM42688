@@ -79,11 +79,7 @@ class ICM42688{
     void setAccelCalZ(double bias,double scaleFactor);
     int setDlpfBandwidth(DLPWBandWith bw);
         // data buffer
-<<<<<<< HEAD
-        double _acc[3] = {};
-=======
     double _acc[3] = {};
->>>>>>> 5949bc991040d6af4a49e38737d416384872654d
     double _gyro[3] = {};
   protected:
     // i2c
@@ -106,10 +102,6 @@ class ICM42688{
     int16_t _gyroCounts[3] = {};
     int16_t _tcounts = 0;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 5949bc991040d6af4a49e38737d416384872654d
     double _t = 0.0;
     uint8_t _isInterrupted = 0;
     // scale factors
