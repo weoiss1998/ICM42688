@@ -345,7 +345,7 @@ int ICM42688::readSensor() {
 //  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
     _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale));
   _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale));
-  _acc[2] = (((double)(tZ[2]*(_accCounts[2]+668.0)) * _accelScale));
+  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale)+3.19716714f);
   _t = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
   _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
   _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
