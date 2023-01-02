@@ -112,7 +112,8 @@ int ICM42688::setAccelRange(AccelRange range) {
       if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G) < 0) {
         return -1;
       }
-      _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
+      _accelScale = G*2048.0f;
+      //_accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
       break;
     }
   }
@@ -339,13 +340,16 @@ int ICM42688::readSensor() {
   _gyroCounts[0] = (((int16_t)_buffer[8]) << 8) | _buffer[9];
   _gyroCounts[1] = (((int16_t)_buffer[10]) << 8) | _buffer[11];
   _gyroCounts[2] = (((int16_t)_buffer[12]) << 8) | _buffer[13];
-  _acc[0] = (((double)(tX[0]*_accCounts[0] + tX[1]*_accCounts[1] + tX[2]*_accCounts[2]) * _accelScale) - _accB[0])*_accS[0];
-  _acc[1] = (((double)(tY[0]*_accCounts[0] + tY[1]*_accCounts[1] + tY[2]*_accCounts[2]) * _accelScale) - _accB[1])*_accS[1];
-  _acc[2] = (((double)(tZ[0]*_accCounts[0] + tZ[1]*_accCounts[1] + tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+ // _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
+ // _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
+//  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+    _acc[0] = (((double)(tX[1]*_accCounts[1]) / _accelScale));
+  _acc[1] = (((double)(tY[0]*_accCounts[0]) / _accelScale));
+  _acc[2] = (((double)(tZ[2]*_accCounts[2]) / _accelScale));
   _t = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
-  _gyro[0] = ((double)(tX[0]*_gyroCounts[0] + tX[1]*_gyroCounts[1] + tX[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[0];
-  _gyro[1] = ((double)(tY[0]*_gyroCounts[0] + tY[1]*_gyroCounts[1] + tY[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[1];
-  _gyro[2] = ((double)(tZ[0]*_gyroCounts[0] + tZ[1]*_gyroCounts[1] + tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+  _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
+  _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
+  _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
   return 1;
 }
 
@@ -360,9 +364,9 @@ int ICM42688::readAcc(double* acc) {
   _accCounts[0] = (((int16_t)_buffer[0]) << 8) | _buffer[1];
   _accCounts[1] = (((int16_t)_buffer[2]) << 8) | _buffer[3];
   _accCounts[2] = (((int16_t)_buffer[4]) << 8) | _buffer[5];
-  _acc[0] = (((double)(tX[0]*_accCounts[0] + tX[1]*_accCounts[1] + tX[2]*_accCounts[2]) * _accelScale) - _accB[0])*_accS[0];
-  _acc[1] = (((double)(tY[0]*_accCounts[0] + tY[1]*_accCounts[1] + tY[2]*_accCounts[2]) * _accelScale) - _accB[1])*_accS[1];
-  _acc[2] = (((double)(tZ[0]*_accCounts[0] + tZ[1]*_accCounts[1] + tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+  _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
+  _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
+  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
   memcpy(acc, _acc, 3*sizeof(double));
   return 1;
 }
@@ -378,9 +382,9 @@ int ICM42688::readGyro(double* gyro) {
   _gyroCounts[0] = (((int16_t)_buffer[0]) << 8) | _buffer[1];
   _gyroCounts[1] = (((int16_t)_buffer[2]) << 8) | _buffer[3];
   _gyroCounts[2] = (((int16_t)_buffer[4]) << 8) | _buffer[5];
-  _gyro[0] = ((double)(tX[0]*_gyroCounts[0] + tX[1]*_gyroCounts[1] + tX[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[0];
-  _gyro[1] = ((double)(tY[0]*_gyroCounts[0] + tY[1]*_gyroCounts[1] + tY[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[1];
-  _gyro[2] = ((double)(tZ[0]*_gyroCounts[0] + tZ[1]*_gyroCounts[1] + tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+  _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
+  _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
+  _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
   memcpy(gyro, _gyro, 3*sizeof(double));
   return 1;
 }
@@ -399,12 +403,12 @@ int ICM42688::readAccGyro(double* accGyro) {
   _gyroCounts[0] = (((int16_t)_buffer[6]) << 8) | _buffer[7];
   _gyroCounts[1] = (((int16_t)_buffer[8]) << 8) | _buffer[9];
   _gyroCounts[2] = (((int16_t)_buffer[10]) << 8) | _buffer[11];
-  _acc[0] = (((double)(tX[0]*_accCounts[0] + tX[1]*_accCounts[1] + tX[2]*_accCounts[2]) * _accelScale) - _accB[0])*_accS[0];
-  _acc[1] = (((double)(tY[0]*_accCounts[0] + tY[1]*_accCounts[1] + tY[2]*_accCounts[2]) * _accelScale) - _accB[1])*_accS[1];
-  _acc[2] = (((double)(tZ[0]*_accCounts[0] + tZ[1]*_accCounts[1] + tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
-  _gyro[0] = ((double)(tX[0]*_gyroCounts[0] + tX[1]*_gyroCounts[1] + tX[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[0];
-  _gyro[1] = ((double)(tY[0]*_gyroCounts[0] + tY[1]*_gyroCounts[1] + tY[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[1];
-  _gyro[2] = ((double)(tZ[0]*_gyroCounts[0] + tZ[1]*_gyroCounts[1] + tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+  _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
+  _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
+  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+  _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
+  _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
+  _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
   memcpy(&accGyro[0], _acc, 3*sizeof(double));
   memcpy(&accGyro[3], _gyro, 3*sizeof(double));
   return 1;
