@@ -1,0 +1,26 @@
+{
+    "name": "ICM-42688",
+    "version": "1.0.0",
+    "description": "This library supports both I2C and SPI communication with the ICM42688. ICM42688 object declaration is overloaded with different declarations for I2C and SPI communication. All other functions remain the same. Additionally, a derived class, ICM42688FIFO, is included, which provides FIFO setup and data collection functionality in addition to all of the functionality included in the base ICM42688 class.",
+    "keywords": "imu, icm, icm42688",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/weoiss1998/ICM42688.git"
+    },
+    "authors":
+    [
+      {
+        "name": "Simon Weiß",
+        "email": "",
+        "url": ""
+      }
+
+    ],
+    "license": "MIT",
+    "homepage": "",
+    "dependencies": {
+    },
+    "frameworks": "*",
+    "platforms": "*"
+  }

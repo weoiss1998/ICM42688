@@ -25,6 +25,16 @@ class ICM42688{
       ACCEL_RANGE_8G,
       ACCEL_RANGE_16G
     };
+    enum DLPWBandWith{
+      DLPF_BANDWIDTH_4000HZ,
+      DLPF_BANDWIDTH_170HZ,
+      DLPF_BANDWIDTH_82HZ,
+      DLPF_BANDWIDTH_40HZ,
+      DLPF_BANDWIDTH_20HZ,
+      DLPF_BANDWIDTH_10HZ,
+      DLPF_BANDWIDTH_5HZ
+    };
+   
     ICM42688(TwoWire &bus,uint8_t address);
     ICM42688(SPIClass &bus,uint8_t csPin);
     int begin();
@@ -67,6 +77,7 @@ class ICM42688{
     void setAccelCalX(double bias,double scaleFactor);
     void setAccelCalY(double bias,double scaleFactor);
     void setAccelCalZ(double bias,double scaleFactor);
+    int setDlpfBandwidth(DLPWBandWith bw);
   protected:
     // i2c
     uint8_t _address = 0;
@@ -167,6 +178,15 @@ class ICM42688{
     const uint8_t GYRO_ODR_12_5HZ = 0x0B;
     const uint8_t GYRO_ODR_500HZ = 0x0F;
 
+    const uint8_t GYRO_CONFIG1 = 0x51;
+    const uint8_t TEMP_FILT_BW_4000HZ = 0b00000000;
+    const uint8_t TEMP_FILT_BW_170HZ = 0b00100000;
+    const uint8_t TEMP_FILT_BW_82HZ = 0b01000000;
+    const uint8_t TEMP_FILT_BW_40HZ = 0b01100000;
+    const uint8_t TEMP_FILT_BW_20HZ = 0b10000000;
+    const uint8_t TEMP_FILT_BW_10HZ = 0b10100000;
+    const uint8_t TEMP_FILT_BW_5HZ = 0b11000000;
+
     const uint8_t INT_CONFIG = 0x14;
     const uint8_t INT_HOLD_ANY = 0x08;
     const uint8_t INT_PULSE_100us = 0x03;
@@ -213,6 +233,8 @@ class ICM42688{
     int writeRegister(uint8_t subAddress, uint8_t data);
     int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
     int whoAmI();
+
+
 };
 
 class ICM42688_FIFO: public ICM42688 {

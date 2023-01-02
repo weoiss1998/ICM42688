@@ -193,6 +193,65 @@ int ICM42688::setGyroRange(GyroRange range) {
   _gyroRange = range;
   return 1;
 }
+/* sets the tempeartue full scale bandwith to values other than default */
+int ICM42688::setDlpfBandwidth(DLPWBandWith bw)
+{
+  // use low speed SPI for register setting
+  _useSPIHS = false;
+  switch(bw) {
+    case DLPF_BANDWIDTH_4000HZ: {
+      // setting the bandwith of the temperature to 4000Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_4000HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_170HZ: {
+      // setting the bandwith of the temperature to 170Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_170HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_82HZ: {
+      // setting the bandwith of the temperature to 82Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_82HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_40HZ: {
+      // setting the bandwith of the temperature to 40Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_40HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_20HZ: {
+      // setting the bandwith of the temperature to 20Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_20HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_10HZ: {
+      // setting the bandwith of the temperature to 10Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_10HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+    case DLPF_BANDWIDTH_5HZ: {
+      // setting the bandwith of the temperature to 5Hz
+      if(writeRegister(GYRO_CONFIG1,TEMP_FILT_BW_5HZ) < 0) {
+        return -1;
+      }
+      break;
+    }
+  }
+  return 1;
+
+}
 
 int ICM42688::setFilters(bool gyroFilters, bool accFilters) {
   if (writeRegister(BANK_SEL, BANK1) < 0) {
@@ -666,6 +725,8 @@ void ICM42688::setAccelCalZ(double bias,double scaleFactor) {
   _accB[2] = bias;
   _accS[2] = scaleFactor;
 }
+
+
 
 /* writes a byte to ICM42688 register given a register address and data */
 int ICM42688::writeRegister(uint8_t subAddress, uint8_t data) {

@@ -24,7 +24,7 @@ void setup() {
     while(1) {}
   }
   // setting DLPF bandwidth to 20 Hz
-  IMU.setDlpfBandwidth(ICM42688::DLPF_BANDWIDTH_21HZ);
+  IMU.setDlpfBandwidth(ICM42688::DLPF_BANDWIDTH_20HZ);
   // setting SRD to 19 for a 50 Hz update rate
   IMU.setSrd(19);
   // enabling the FIFO to record just the accelerometers
