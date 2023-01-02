@@ -114,6 +114,7 @@ int ICM42688::setAccelRange(AccelRange range) {
       }
       //_accelScale = G*2048.0f;
       _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G -> 0,004788647
+      calibrateAccel();
       break;
     }
   }
@@ -340,12 +341,12 @@ int ICM42688::readSensor() {
   _gyroCounts[0] = (((int16_t)_buffer[8]) << 8) | _buffer[9];
   _gyroCounts[1] = (((int16_t)_buffer[10]) << 8) | _buffer[11];
   _gyroCounts[2] = (((int16_t)_buffer[12]) << 8) | _buffer[13];
- // _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
- // _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
-//  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
-    _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale));
-  _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale));
-  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale)+3.19716714f);
+  _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
+  _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
+  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+//    _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale));
+//  _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale));
+//  _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale)+3.19716714f);
   _t = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
   _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
   _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
