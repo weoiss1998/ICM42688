@@ -85,7 +85,7 @@ int ICM42688::setAccelRange(AccelRange range) {
   switch(range) {
     case ACCEL_RANGE_2G: {
       // setting the accel range to 2G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_2G) < 0) {
+      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_2G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 2.0f/32767.5f; // setting the accel scale to 2G
@@ -93,7 +93,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_4G: {
       // setting the accel range to 4G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_4G) < 0) {
+      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_4G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 4.0f/32767.5f; // setting the accel scale to 4G
@@ -101,7 +101,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_8G: {
       // setting the accel range to 8G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_8G) < 0) {
+      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_8G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 8.0f/32767.5f; // setting the accel scale to 8G
@@ -109,7 +109,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_16G: {
       // setting the accel range to 16G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G) < 0) {
+      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       //_accelScale = G*2048.0f;
