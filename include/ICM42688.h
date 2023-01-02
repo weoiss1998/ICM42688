@@ -78,9 +78,8 @@ class ICM42688{
     void setAccelCalY(double bias,double scaleFactor);
     void setAccelCalZ(double bias,double scaleFactor);
     int setDlpfBandwidth(DLPWBandWith bw);
-        // data buffer
-    double _acc[3] = {};
-    double _gyro[3] = {};
+     // data counts
+    int16_t _accCounts[3] = {};
   protected:
     // i2c
     uint8_t _address = 0;
@@ -98,9 +97,11 @@ class ICM42688{
     // buffer for reading from sensor
     uint8_t _buffer[15] = {};
     // data counts
-    int16_t _accCounts[3] = {};
     int16_t _gyroCounts[3] = {};
     int16_t _tcounts = 0;
+           // data buffer
+    double _acc[3] = {};
+    double _gyro[3] = {};
 
     double _t = 0.0;
     uint8_t _isInterrupted = 0;
