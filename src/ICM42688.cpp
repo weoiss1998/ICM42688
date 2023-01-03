@@ -629,6 +629,7 @@ void ICM42688::setGyroBiasZ_rads(double bias) {
 void ICM42688::correctAccelData(){
    if (writeRegister(BANK_SEL, BANK4)<0){
     readSensor();
+    delay(1);
     float temp = _acc[2]+G;
     temp=temp/G;
     temp=temp*2000.0;
