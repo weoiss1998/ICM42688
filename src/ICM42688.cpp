@@ -31,7 +31,8 @@ int ICM42688::begin() {
     _i2c->begin();
     // setting the I2C clock
     _i2c->setClock(_i2cRate);
-  }
+  }writeRegister(BANK_SEL, BANK0);
+    delay(1);
   // select clock source to gyro
   if(writeRegister(INTF_CONFIG1,CLOCK_SEL_PLL) < 0) {
     return -1;
