@@ -78,6 +78,7 @@ class ICM42688{
     void setAccelCalY(double bias,double scaleFactor);
     void setAccelCalZ(double bias,double scaleFactor);
     int setDlpfBandwidth(DLPWBandWith bw);
+    void correctAccelData();
      // data counts
     int16_t _accCounts[3] = {};
   protected:
@@ -231,6 +232,9 @@ class ICM42688{
     const uint8_t ACCEL_AAF_ENABLE = 0x00;
     const uint8_t ACCEL_AAF_DISABLE = 0x01;
 
+
+    // BANK 4
+    const uint8_t ACCEL_OFFSET_Z = 0x7E;
     // private functions
     int writeRegister(uint8_t subAddress, uint8_t data);
     int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);

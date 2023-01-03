@@ -53,9 +53,9 @@ int ICM42688::begin() {
     return -4;
   }
   // setting accel range to 16G and 32kHz as default
-  //if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G | ACCEL_ODR_32KHZ) < 0) {
-  //  return -5;
-  //}
+  if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G | ACCEL_ODR_32KHZ) < 0) {
+    return -5;
+  }
   _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
   _accelRange = ACCEL_RANGE_16G;
   // setting the gyro range to 2000DPS and 32kHz as default
@@ -623,7 +623,27 @@ void ICM42688::setGyroBiasY_rads(double bias) {
 void ICM42688::setGyroBiasZ_rads(double bias) {
   _gyroB[2] = bias;
 }
+void ICM42688::correctAccelData(){
+   if (writeRegister(BANK_SEL, BANK4)<0){
+    readSensor();
+    float temp = _acc[2]+G;
+    temp=temp/G;
+    temp=temp*2000.0;
+    uint16_t senden= temp;
+    uint8_t upper_bits = highByte(senden);
+    upper_bits=upper_bits<<4;
+    upper_bits=upper_bits && 0b01110000;
+    uint8_t lower_bits=lowByte(senden);
+    if(temp<0){
+      upper_bits=upper_bits||0b10000000;
+    }
+    writeRegister(ACCEL_OFFSET_Z,upper_bits);
+    writeRegister((ACCEL_OFFSET_Z+1),lower_bits);
+    writeRegister(BANK_SEL, BANK0);
+   }
 
+
+}
 /* finds bias and scale factor calibration for the accelerometer,
 this should be run for each axis in each direction (6 total) to find
 the min and max values along each */
@@ -680,6 +700,7 @@ int ICM42688::calibrateAccel() {
   if (setAccelRange(_accelRange) < 0) {
     return -4;
   }
+  correctAccelData();
   return 1;
 }
 
