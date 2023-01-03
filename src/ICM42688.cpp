@@ -58,6 +58,8 @@ int ICM42688::begin() {
   }
   _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
   _accelRange = ACCEL_RANGE_16G;
+
+  calibrateAccel();
   // setting the gyro range to 2000DPS and 32kHz as default
   if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_2000DPS | GYRO_ODR_32KHZ) < 0) {
     return -6;
@@ -629,7 +631,7 @@ void ICM42688::correctAccelData(){
     float temp = _acc[2]+G;
     temp=temp/G;
     temp=temp*2000.0;
-    uint16_t senden= temp;
+    uint16_t senden= abs(temp);
     uint8_t upper_bits = highByte(senden);
     upper_bits=upper_bits<<4;
     upper_bits=upper_bits && 0b01110000;
@@ -638,8 +640,11 @@ void ICM42688::correctAccelData(){
       upper_bits=upper_bits||0b10000000;
     }
     writeRegister(ACCEL_OFFSET_Z,upper_bits);
+    delay(1);
     writeRegister((ACCEL_OFFSET_Z+1),lower_bits);
+    delay(1);
     writeRegister(BANK_SEL, BANK0);
+    delay(1);
    }
 
 
@@ -700,7 +705,7 @@ int ICM42688::calibrateAccel() {
   if (setAccelRange(_accelRange) < 0) {
     return -4;
   }
-  correctAccelData();
+  //correctAccelData();
   return 1;
 }
 
