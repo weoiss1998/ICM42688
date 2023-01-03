@@ -138,10 +138,10 @@ class ICM42688{
     const uint8_t TEMP_OUT = 0x1D;
 
     const uint8_t ACCEL_CONFIG0 = 0x50;
-    const uint8_t ACCEL_FS_SEL_2G = 0x60; // TODO: 0x60 in datasheet
-    const uint8_t ACCEL_FS_SEL_4G = 0x40; // TODO: 0x40 in datasheet
-    const uint8_t ACCEL_FS_SEL_8G = 0x20; // TODO: 0x20 in datasheet
-    const uint8_t ACCEL_FS_SEL_16G = 0x00; // TODO: 0x00 in datasheet
+    const uint8_t ACCEL_FS_SEL_2G = 0x80; // TODO: 0x60 in datasheet
+    const uint8_t ACCEL_FS_SEL_4G = 0x60; // TODO: 0x40 in datasheet
+    const uint8_t ACCEL_FS_SEL_8G = 0x40; // TODO: 0x20 in datasheet
+    const uint8_t ACCEL_FS_SEL_16G = 0x20; // TODO: 0x00 in datasheet
     const uint8_t ACCEL_ODR_32KHZ = 0x01;
     const uint8_t ACCEL_ODR_16KHZ = 0x02;
     const uint8_t ACCEL_ODR_8KHZ = 0x03;
