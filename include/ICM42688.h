@@ -205,7 +205,7 @@ class ICM42688{
     ICM42688(TwoWire &bus,uint8_t address);
     ICM42688(SPIClass &bus,uint8_t csPin);
     int begin();
-    void ICM42688::init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
+    void init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
     int setAccelRange(AccelRange range);
     int setGyroRange(GyroRange range);
     int setFilters(bool gyroFilters, bool accFilters);
