@@ -57,6 +57,8 @@ int ICM42688::begin() {
   if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G | ACCEL_ODR_32KHZ) < 0) {
     return -5;
   }
+
+  calibrateAll();
   _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
   _accelRange = ACCEL_RANGE_16G;
 
