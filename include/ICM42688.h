@@ -171,6 +171,16 @@
 #define GODR_25Hz   0x0A
 #define GODR_12_5Hz 0x0B
 
+#define CLOCK_SEL_PLL 0x01
+#define PWR_RESET 0x80
+#define SEN_ENABLE 0x0F
+
+#define BANK0  0x00
+#define BANK1  0x01
+#define BANK2  0x02
+#define BANK3  0x03
+#define BANK4  0x04
+
 
 class ICM42688{
   public:
@@ -204,8 +214,8 @@ class ICM42688{
    
     ICM42688(TwoWire &bus,uint8_t address);
     ICM42688(SPIClass &bus,uint8_t csPin);
-    int begin();
-    void init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
+    int begin(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
+    int init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
     int setAccelRange(AccelRange range);
     int setGyroRange(GyroRange range);
     int setFilters(bool gyroFilters, bool accFilters);
@@ -324,7 +334,6 @@ uint8_t Ascale = AFS_2G, Gscale = GFS_250DPS, AODR = AODR_200Hz, GODR = GODR_200
     const uint8_t GYRO_OUT = 0x25;
     const uint8_t TEMP_OUT = 0x1D;
 
-    const uint8_t ACCEL_CONFIG0 = 0x50;
     const uint8_t ACCEL_FS_SEL_2G = 0x80; // TODO: 0x60 in datasheet
     const uint8_t ACCEL_FS_SEL_4G = 0x60; // TODO: 0x40 in datasheet
     const uint8_t ACCEL_FS_SEL_8G = 0x40; // TODO: 0x20 in datasheet
@@ -345,7 +354,6 @@ uint8_t Ascale = AFS_2G, Gscale = GFS_250DPS, AODR = AODR_200Hz, GODR = GODR_200
     const uint8_t ACCEL_ODR_1_5625HZ = 0x0E;
     const uint8_t ACCEL_ODR_500HZ = 0x0F;
 
-    const uint8_t GYRO_CONFIG0 = 0x4F;
     const uint8_t GYRO_FS_SEL_15_625DPS = 0xE0;
     const uint8_t GYRO_FS_SEL_31_25DPS = 0xC0;
     const uint8_t GYRO_FS_SEL_62_5DPS = 0xA0;
@@ -384,12 +392,7 @@ uint8_t Ascale = AFS_2G, Gscale = GFS_250DPS, AODR = AODR_200Hz, GODR = GODR_200
     const uint8_t UI_DRDY_INT1_EN = 0x10;
     const uint8_t INT_STATUS = 0x2D;
 
-    const uint8_t DEVICE_CONFIG = 0x11;
-    const uint8_t PWR_RESET = 0x80;
-    const uint8_t INTF_CONFIG1 = 0x4D;
-    const uint8_t CLOCK_SEL_PLL = 0x01;
-    const uint8_t PWR_MGMT0 = 0x4E;
-    const uint8_t SEN_ENABLE = 0x0F;
+
 
     const uint8_t WHO_AM_I = 0x75;
     const uint8_t FIFO_EN = 0x23;
@@ -399,22 +402,14 @@ uint8_t Ascale = AFS_2G, Gscale = GFS_250DPS, AODR = AODR_200Hz, GODR = GODR_200
     const uint8_t FIFO_COUNT = 0x2E;
     const uint8_t FIFO_DATA = 0x30;
 
-    const uint8_t BANK_SEL = 0x76;
-    const uint8_t BANK0 = 0x00;
-    const uint8_t BANK1 = 0x01;
-    const uint8_t BANK2 = 0x02;
-    const uint8_t BANK3 = 0x03;
-    const uint8_t BANK4 = 0x04;
 
     // BANK 1
-    const uint8_t GYRO_CONFIG_STATIC2 = 0x0B;
     const uint8_t GYRO_NF_ENABLE = 0x00;
     const uint8_t GYRO_NF_DISABLE = 0x01;
     const uint8_t GYRO_AAF_ENABLE = 0x00;
     const uint8_t GYRO_AAF_DISABLE = 0x02;
 
     // BANK 2
-    const uint8_t ACCEL_CONFIG_STATIC2 = 0x03;
     const uint8_t ACCEL_AAF_ENABLE = 0x00;
     const uint8_t ACCEL_AAF_DISABLE = 0x01;
 

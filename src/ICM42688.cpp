@@ -16,7 +16,7 @@ ICM42688::ICM42688(SPIClass &bus,uint8_t csPin) {
 }
 
 /* starts communication with the ICM42688 */
-int ICM42688::begin() {
+int ICM42688::begin(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR) {
   if( _useSPI ) { // using SPI for communication
     // use low speed SPI for register setting
     _useSPIHS = false;
@@ -31,55 +31,9 @@ int ICM42688::begin() {
     _i2c->begin();
     // setting the I2C clock
     _i2c->setClock(_i2cRate);
-  }writeRegister(BANK_SEL, BANK0);
-    delay(1);
-  // select clock source to gyro
-  if(writeRegister(INTF_CONFIG1,CLOCK_SEL_PLL) < 0) {
-    return -1;
   }
-  // reset the ICM42688
-  writeRegister(DEVICE_CONFIG,PWR_RESET);
-  // wait for ICM42688 to come back up
-  delay(1);
-  // select clock source to gyro
-  if(writeRegister(INTF_CONFIG1,CLOCK_SEL_PLL) < 0) {
-    return -2;
-  }
-  // check the WHO AM I byte, expected value is 0x47 (decimal 71)
-  if(whoAmI() != 71) {
-    return -3;
-  }
-  // enable accelerometer and gyro
-  if(writeRegister(PWR_MGMT0,SEN_ENABLE) < 0) {
-    return -4;
-  }
-  // setting accel range to 16G and 32kHz as default
-  if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G | ACCEL_ODR_32KHZ) < 0) {
-    return -5;
-  }
+  init_neu(Ascale, Gscale, AODR, GODR);
 
-  calibrateAll();
-  _accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
-  _accelRange = ACCEL_RANGE_16G;
-
-  calibrateAccel();
-  // setting the gyro range to 2000DPS and 32kHz as default
-  if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_2000DPS | GYRO_ODR_32KHZ) < 0) {
-    return -6;
-  }
-  _gyroScale = 2000.0f/32767.5f * _d2r; // setting the gyro scale to 2000DPS
-  _gyroRange = GYRO_RANGE_2000DPS;
-
-  // // disable inner filters (Notch filter, Anti-alias filter, UI filter block)
-  // if (setFilters(false, false) < 0) {
-  //   return -7;
-  // }
-
-  // estimate gyro bias
-  if (calibrateGyro() < 0) {
-    return -8;
-  }
-  // successful init, return 1
   return 1;
 }
 
@@ -88,6 +42,9 @@ void ICM42688::selfTest(int16_t * accelDiff, int16_t * gyroDiff, float * ratio){
   int16_t accelSTest[3] = {0, 0, 0}, gyroSTest[3] = {0, 0, 0};
   int16_t accelNom[3] = {0, 0, 0}, gyroNom[3] = {0, 0, 0};
 
+   // set sensor resolutions for self test
+   aRes = 4.0f/32768.0f;
+   gRes = 250.0f/32768.0f;
   writeRegister(ICM42688_REG_BANK_SEL, 0x00); // select register bank 0
  
   writeRegister(ICM42688_PWR_MGMT0,  0x0F); // turn on accel and gyro in low noise mode
@@ -170,7 +127,7 @@ int ICM42688::setAccelRange(AccelRange range) {
   switch(range) {
     case ACCEL_RANGE_2G: {
       // setting the accel range to 2G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_2G|ACCEL_ODR_100HZ) < 0) {
+      if(writeRegister(ICM42688_ACCEL_CONFIG0,ACCEL_FS_SEL_2G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 2.0f/32767.5f; // setting the accel scale to 2G
@@ -178,7 +135,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_4G: {
       // setting the accel range to 4G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_4G|ACCEL_ODR_100HZ) < 0) {
+      if(writeRegister(ICM42688_ACCEL_CONFIG0,ACCEL_FS_SEL_4G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 4.0f/32767.5f; // setting the accel scale to 4G
@@ -186,7 +143,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_8G: {
       // setting the accel range to 8G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_8G|ACCEL_ODR_100HZ) < 0) {
+      if(writeRegister(ICM42688_ACCEL_CONFIG0,ACCEL_FS_SEL_8G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       _accelScale = G * 8.0f/32767.5f; // setting the accel scale to 8G
@@ -194,7 +151,7 @@ int ICM42688::setAccelRange(AccelRange range) {
     }
     case ACCEL_RANGE_16G: {
       // setting the accel range to 16G
-      if(writeRegister(ACCEL_CONFIG0,ACCEL_FS_SEL_16G|ACCEL_ODR_100HZ) < 0) {
+      if(writeRegister(ICM42688_ACCEL_CONFIG0,ACCEL_FS_SEL_16G|ACCEL_ODR_100HZ) < 0) {
         return -1;
       }
       //_accelScale = G*2048.0f;
@@ -214,7 +171,7 @@ int ICM42688::setGyroRange(GyroRange range) {
   switch(range) {
     case GYRO_RANGE_15_625DPS: {
       // setting the gyro range to 15.625DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_15_625DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_15_625DPS) < 0) {
         return -1;
       }
       _gyroScale = 15.625f/32767.5f * _d2r; // setting the gyro scale to 15.625DPS
@@ -222,7 +179,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_31_25DPS: {
       // setting the gyro range to 31.25DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_31_25DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_31_25DPS) < 0) {
         return -1;
       }
       _gyroScale = 31.25f/32767.5f * _d2r; // setting the gyro scale to 31.25DPS
@@ -230,7 +187,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_62_5DPS: {
       // setting the gyro range to 62.5DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_62_5DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_62_5DPS) < 0) {
         return -1;
       }
       _gyroScale = 62.5f/32767.5f * _d2r; // setting the gyro scale to 62.5DPS
@@ -238,7 +195,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_125DPS: {
       // setting the gyro range to 125DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_125DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_125DPS) < 0) {
         return -1;
       }
       _gyroScale = 125.0f/32767.5f * _d2r; // setting the gyro scale to 125DPS
@@ -246,7 +203,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_250DPS: {
       // setting the gyro range to 250DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_250DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_250DPS) < 0) {
         return -1;
       }
       _gyroScale = 250.0f/32767.5f * _d2r; // setting the gyro scale to 250DPS
@@ -254,7 +211,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_500DPS: {
       // setting the gyro range to 500DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_500DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_500DPS) < 0) {
         return -1;
       }
       _gyroScale = 500.0f/32767.5f * _d2r; // setting the gyro scale to 500DPS
@@ -262,7 +219,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_1000DPS: {
       // setting the gyro range to 1000DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_1000DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_1000DPS) < 0) {
         return -1;
       }
       _gyroScale = 1000.0f/32767.5f * _d2r; // setting the gyro scale to 1000DPS
@@ -270,7 +227,7 @@ int ICM42688::setGyroRange(GyroRange range) {
     }
     case GYRO_RANGE_2000DPS: {
       // setting the gyro range to 2000DPS
-      if(writeRegister(GYRO_CONFIG0,GYRO_FS_SEL_2000DPS) < 0) {
+      if(writeRegister(ICM42688_GYRO_CONFIG0,GYRO_FS_SEL_2000DPS) < 0) {
         return -1;
       }
       _gyroScale = 2000.0f/32767.5f * _d2r; // setting the gyro scale to 2000DPS
@@ -341,33 +298,33 @@ int ICM42688::setDlpfBandwidth(DLPWBandWith bw)
 }
 
 int ICM42688::setFilters(bool gyroFilters, bool accFilters) {
-  if (writeRegister(BANK_SEL, BANK1) < 0) {
+  if (writeRegister(ICM42688_REG_BANK_SEL , BANK1) < 0) {
     return -1;
   }
   if (gyroFilters == true) {
-    if (writeRegister(GYRO_CONFIG_STATIC2, GYRO_NF_ENABLE | GYRO_AAF_ENABLE) < 0) {
+    if (writeRegister(ICM42688_GYRO_CONFIG_STATIC2 , GYRO_NF_ENABLE | GYRO_AAF_ENABLE) < 0) {
       return -2;
     }
   }
   else {
-    if (writeRegister(GYRO_CONFIG_STATIC2, GYRO_NF_DISABLE | GYRO_AAF_DISABLE) < 0) {
+    if (writeRegister(ICM42688_GYRO_CONFIG_STATIC2 , GYRO_NF_DISABLE | GYRO_AAF_DISABLE) < 0) {
       return -3;
     }
   }
-  if (writeRegister(BANK_SEL, BANK2) < 0) {
+  if (writeRegister(ICM42688_REG_BANK_SEL, BANK2) < 0) {
     return -4;
   }
   if (accFilters == true) {
-    if (writeRegister(ACCEL_CONFIG_STATIC2, ACCEL_AAF_ENABLE) < 0) {
+    if (writeRegister(ICM42688_ACCEL_CONFIG_STATIC2, ACCEL_AAF_ENABLE) < 0) {
       return -5;
     }
   }
   else {
-    if (writeRegister(ACCEL_CONFIG_STATIC2, ACCEL_AAF_DISABLE) < 0) {
+    if (writeRegister(ICM42688_ACCEL_CONFIG_STATIC2, ACCEL_AAF_DISABLE) < 0) {
       return -6;
     }
   }
-  if (writeRegister(BANK_SEL, BANK0) < 0) {
+  if (writeRegister(ICM42688_REG_BANK_SEL, BANK0) < 0) {
     return -7;
   }
   return 1;
@@ -429,13 +386,24 @@ int ICM42688::readSensor() {
  // _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
  // _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
  // _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
-    _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale));
+   _t = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
+  /*  _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale));
   _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale));
   _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale));
-  _t = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
   _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
   _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
-  _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+  _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];*/
+
+  
+  // Now we'll calculate the accleration value into actual g's
+     _acc[0] = (float)_accCounts[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
+     _acc[1] = (float)_accCounts[1]*aRes - accelBias[1];   
+     _acc[2] = (float)_accCounts[2]*aRes - accelBias[2]; 
+
+    // Calculate the gyro value into actual degrees per second
+     _gyro[0] = (float)_gyroCounts[0]*gRes - gyroBias[0];  // get actual gyro value, this depends on scale being set
+     _gyro[0] = (float)_gyroCounts[1]*gRes - gyroBias[1];  
+     _gyro[0] = (float)_gyroCounts[2]*gRes - gyroBias[2]; 
   return 1;
 }
 
@@ -453,6 +421,11 @@ int ICM42688::readAcc(double* acc) {
   _acc[0] = (((double)(tX[1]*_accCounts[1]) * _accelScale) - _accB[0])*_accS[0];
   _acc[1] = (((double)(tY[0]*_accCounts[0]) * _accelScale) - _accB[1])*_accS[1];
   _acc[2] = (((double)(tZ[2]*_accCounts[2]) * _accelScale) - _accB[2])*_accS[2];
+  /*
+  // Now we'll calculate the accleration value into actual g's
+     _acc[0] = (float)_accCounts[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
+     _acc[1] = (float)_accCounts[1]*aRes - accelBias[1];   
+     _acc[2] = (float)_accCounts[2]*aRes - accelBias[2];  */
   memcpy(acc, _acc, 3*sizeof(double));
   return 1;
 }
@@ -471,6 +444,11 @@ int ICM42688::readGyro(double* gyro) {
   _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
   _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
   _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+/*
+     // Calculate the gyro value into actual degrees per second
+     _gyro[0] = (float)_gyroCounts[0]*gRes - gyroBias[0];  // get actual gyro value, this depends on scale being set
+     _gyro[0] = (float)_gyroCounts[1]*gRes - gyroBias[1];  
+     _gyro[0] = (float)_gyroCounts[2]*gRes - gyroBias[2]; */
   memcpy(gyro, _gyro, 3*sizeof(double));
   return 1;
 }
@@ -495,6 +473,16 @@ int ICM42688::readAccGyro(double* accGyro) {
   _gyro[0] = ((double)(tX[1]*_gyroCounts[1]) * _gyroScale) - _gyroB[0];
   _gyro[1] = ((double)(tY[0]*_gyroCounts[0]) * _gyroScale) - _gyroB[1];
   _gyro[2] = ((double)(tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+/*
+  // Now we'll calculate the accleration value into actual g's
+     _acc[0] = (float)_accCounts[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
+     _acc[1] = (float)_accCounts[1]*aRes - accelBias[1];   
+     _acc[2] = (float)_accCounts[2]*aRes - accelBias[2];  
+
+   // Calculate the gyro value into actual degrees per second
+     _gyro[0] = (float)_gyroCounts[0]*gRes - gyroBias[0];  // get actual gyro value, this depends on scale being set
+     _gyro[0] = (float)_gyroCounts[1]*gRes - gyroBias[1];  
+     _gyro[0] = (float)_gyroCounts[2]*gRes - gyroBias[2]; */
   memcpy(&accGyro[0], _acc, 3*sizeof(double));
   memcpy(&accGyro[3], _gyro, 3*sizeof(double));
   return 1;
@@ -564,92 +552,6 @@ int ICM42688_FIFO::enableFifo(bool accel,bool gyro,bool temp) {
   return 1;
 }
 
-/* reads data from the ICM42688 FIFO and stores in buffer */
-int ICM42688_FIFO::readFifo() {
-  _useSPIHS = true; // use the high speed SPI for data readout
-  // get the fifo size
-  readRegisters(FIFO_COUNT, 2, _buffer);
-  _fifoSize = (((uint16_t) (_buffer[0]&0x0F)) <<8) + (((uint16_t) _buffer[1]));
-  // read and parse the buffer
-  for (size_t i=0; i < _fifoSize/_fifoFrameSize; i++) {
-    // grab the data from the ICM42688
-    if (readRegisters(FIFO_DATA,_fifoFrameSize,_buffer) < 0) {
-      return -1;
-    }
-    if (_enFifoAccel) {
-      // combine into 16 bit values
-      _accCounts[0] = (((int16_t)_buffer[0]) << 8) | _buffer[1];
-      _accCounts[1] = (((int16_t)_buffer[2]) << 8) | _buffer[3];
-      _accCounts[2] = (((int16_t)_buffer[4]) << 8) | _buffer[5];
-      // transform and convert to double values
-      _axFifo[i] = (((double)(tX[0]*_accCounts[0] + tX[1]*_accCounts[1] + tX[2]*_accCounts[2]) * _accelScale)-_accB[0])*_accS[0];
-      _ayFifo[i] = (((double)(tY[0]*_accCounts[0] + tY[1]*_accCounts[1] + tY[2]*_accCounts[2]) * _accelScale)-_accB[1])*_accS[1];
-      _azFifo[i] = (((double)(tZ[0]*_accCounts[0] + tZ[1]*_accCounts[1] + tZ[2]*_accCounts[2]) * _accelScale)-_accB[2])*_accS[2];
-      _aSize = _fifoSize/_fifoFrameSize;
-    }
-    if (_enFifoTemp) {
-      // combine into 16 bit values
-      _tcounts = (((int16_t)_buffer[0 + _enFifoAccel*6]) << 8) | _buffer[1 + _enFifoAccel*6];
-      // transform and convert to double values
-      _tFifo[i] = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
-      _tSize = _fifoSize/_fifoFrameSize;
-    }
-    if (_enFifoGyro) {
-      // combine into 16 bit values
-      _gyroCounts[0] = (((int16_t)_buffer[0 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[1 + _enFifoAccel*6 + _enFifoTemp*2];
-      _gyroCounts[1] = (((int16_t)_buffer[2 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[3 + _enFifoAccel*6 + _enFifoTemp*2];
-      _gyroCounts[2] = (((int16_t)_buffer[4 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[5 + _enFifoAccel*6 + _enFifoTemp*2];
-      // transform and convert to double values
-      _gxFifo[i] = ((double)(tX[0]*_gyroCounts[0] + tX[1]*_gyroCounts[1] + tX[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[0];
-      _gyFifo[i] = ((double)(tY[0]*_gyroCounts[0] + tY[1]*_gyroCounts[1] + tY[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[1];
-      _gzFifo[i] = ((double)(tZ[0]*_gyroCounts[0] + tZ[1]*_gyroCounts[1] + tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
-      _gSize = _fifoSize/_fifoFrameSize;
-    }
-  }
-  return 1;
-}
-
-/* returns the accelerometer FIFO size and data in the x direction, m/s/s */
-void ICM42688_FIFO::getFifoAccelX_mss(size_t *size,double* data) {
-  *size = _aSize;
-  memcpy(data,_axFifo,_aSize*sizeof(double));
-}
-
-/* returns the accelerometer FIFO size and data in the y direction, m/s/s */
-void ICM42688_FIFO::getFifoAccelY_mss(size_t *size,double* data) {
-  *size = _aSize;
-  memcpy(data,_ayFifo,_aSize*sizeof(double));
-}
-
-/* returns the accelerometer FIFO size and data in the z direction, m/s/s */
-void ICM42688_FIFO::getFifoAccelZ_mss(size_t *size,double* data) {
-  *size = _aSize;
-  memcpy(data,_azFifo,_aSize*sizeof(double));
-}
-
-/* returns the gyroscope FIFO size and data in the x direction, rad/s */
-void ICM42688_FIFO::getFifoGyroX_rads(size_t *size,double* data) {
-  *size = _gSize;
-  memcpy(data,_gxFifo,_gSize*sizeof(double));
-}
-
-/* returns the gyroscope FIFO size and data in the y direction, rad/s */
-void ICM42688_FIFO::getFifoGyroY_rads(size_t *size,double* data) {
-  *size = _gSize;
-  memcpy(data,_gyFifo,_gSize*sizeof(double));
-}
-
-/* returns the gyroscope FIFO size and data in the z direction, rad/s */
-void ICM42688_FIFO::getFifoGyroZ_rads(size_t *size,double* data) {
-  *size = _gSize;
-  memcpy(data,_gzFifo,_gSize*sizeof(double));
-}
-
-/* returns the die temperature FIFO size and data, C */
-void ICM42688_FIFO::getFifoTemperature_C(size_t *size,double* data) {
-  *size = _tSize;
-  memcpy(data,_tFifo,_tSize*sizeof(double));
-}
 
 /* estimates the gyro biases */
 int ICM42688::calibrateGyro() {
@@ -709,7 +611,7 @@ void ICM42688::setGyroBiasZ_rads(double bias) {
   _gyroB[2] = bias;
 }
 void ICM42688::correctAccelData(){
-   if (writeRegister(BANK_SEL, BANK4)<0){
+   /*if (writeRegister(BANK_SEL, BANK4)<0){
     readSensor();
     delay(1);
     float temp = _acc[2]+G;
@@ -729,7 +631,7 @@ void ICM42688::correctAccelData(){
     delay(1);
     writeRegister(BANK_SEL, BANK0);
     delay(1);
-   }
+   }*/
 
 
 }
@@ -957,7 +859,7 @@ void ICM42688::offsetBias(float * dest1, float * dest2){
   temp[4] = (int16_t) (-dest2[1] / 0.03125f);       // Gy
   temp[5] = (int16_t) (-dest2[2] / 0.03125f);       // Gz
 
-  writeRegister(ICM42688_REG_BANK_SEL, 0x04); // select register bank 4
+  writeRegister(ICM42688_REG_BANK_SEL, BANK4); // select register bank 4
 
   writeRegister(ICM42688_OFFSET_USER5,  temp[0] & 0x00FF); // lower Ax byte
   writeRegister(ICM42688_OFFSET_USER6,  temp[1] & 0x00FF); // lower Ay byte
@@ -969,7 +871,7 @@ void ICM42688::offsetBias(float * dest1, float * dest2){
   writeRegister(ICM42688_OFFSET_USER7,  (temp[2] & 0x0F00) >> 4 | (temp[1] & 0x0F00) >> 8); // upper Az and Ay bytes
   writeRegister(ICM42688_OFFSET_USER1,  (temp[4] & 0x0F00) >> 4 | (temp[3] & 0x0F00) >> 8); // upper Gy and Gx bytes
   
-  writeRegister(ICM42688_REG_BANK_SEL, 0x00); // select register bank 0
+  writeRegister(ICM42688_REG_BANK_SEL, BANK0); // select register bank 0
   
 }
 
@@ -1033,12 +935,12 @@ reset();  // software reset ICM42688 to default registers
    init_neu(Ascale, Gscale, AODR, GODR);
 
    Serial.println("Calculate accel and gyro offset biases: keep sensor flat and motionless!");
-   delay(4000);
+   delay(2000);
 
    offsetBias(accelBias, gyroBias);
    Serial.println("accel biases (mg)"); Serial.println(1000.0f * accelBias[0]); Serial.println(1000.0f * accelBias[1]); Serial.println(1000.0f * accelBias[2]);
    Serial.println("gyro biases (dps)"); Serial.println(gyroBias[0]); Serial.println(gyroBias[1]); Serial.println(gyroBias[2]);
-   delay(1000); 
+   delay(500); 
 }
 
 float ICM42688::getAres(uint8_t Ascale) {
@@ -1103,16 +1005,41 @@ float ICM42688::getGres(uint8_t Gscale) {
   }
 }
 
-void ICM42688::init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR)
+int ICM42688::init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR)
 {
-  writeRegister( ICM42688_REG_BANK_SEL, 0x00); // select register bank 0
-
-  writeRegister( ICM42688_PWR_MGMT0,  0x0F); // turn on accel and gyro in low noise mode
+  writeRegister(ICM42688_REG_BANK_SEL, BANK0); // select register bank 0
   delay(1);
+     // select clock source to gyro
+  if(writeRegister(ICM42688_INTF_CONFIG1 ,CLOCK_SEL_PLL) < 0) {
+    return -1;
+  }
+  // reset the ICM42688
+  writeRegister(ICM42688_DEVICE_CONFIG ,PWR_RESET);
+  // wait for ICM42688 to come back up
+  delay(1);
+  // select clock source to gyro
+  if(writeRegister(ICM42688_INTF_CONFIG1,CLOCK_SEL_PLL) < 0) {
+    return -2;
+  }
 
-  writeRegister( ICM42688_ACCEL_CONFIG0, Ascale << 5 | AODR); // set accel ODR and FS
+    // check the WHO AM I byte, expected value is 0x47 (decimal 71)
+  if(whoAmI() != 71) {
+    return -3;
+  }
+  // enable accelerometer and gyro
+  if(writeRegister(ICM42688_PWR_MGMT0 ,SEN_ENABLE) < 0) {// turn on accel and gyro in low noise mode
+    return -4;
+  }
+  delay(1);
+calibrateAll();
+  // setting accel range to 16G and 32kHz as default
+  if(writeRegister( ICM42688_ACCEL_CONFIG0, Ascale << 5 | AODR) < 0) {// set accel ODR and FS
+    return -5;
+  }
   
-  writeRegister( ICM42688_GYRO_CONFIG0,  Gscale << 5 | GODR); // set gyro ODR and FS
+    if(writeRegister( ICM42688_GYRO_CONFIG0,  Gscale << 5 | GODR) < 0) {// set gyro ODR and FS
+    return -6;
+  }
   
   writeRegister( ICM42688_GYRO_ACCEL_CONFIG0,  0x44); // set gyro and accel bandwidth to ODR/10
  
@@ -1122,5 +1049,111 @@ void ICM42688::init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GO
   writeRegister( ICM42688_INT_CONFIG1, temp & ~(0x10));   // clear bit 4 to allow async interrupt reset (required for proper interrupt operation)
   writeRegister( ICM42688_INT_SOURCE0, 0x08);             // data ready interrupt routed to INT1
   */
-  writeRegister( ICM42688_REG_BANK_SEL, 0x00); // select register bank 0
+
+     // get sensor resolutions for user settings, only need to do this once
+   aRes = getAres(Ascale);
+   gRes = getGres(Gscale);
+  
+
+  offsetBias(accelBias, gyroBias);
+
+  // // disable inner filters (Notch filter, Anti-alias filter, UI filter block)
+  // if (setFilters(false, false) < 0) {
+  //   return -7;
+  // }
+/*
+  // estimate gyro bias
+  if (calibrateGyro() < 0) {
+    return -8;
+  }*/
+  // successful init, return 1
+  writeRegister( ICM42688_REG_BANK_SEL, BANK0); // select register bank 0
+  return 1;
+}
+
+/* reads data from the ICM42688 FIFO and stores in buffer */
+int ICM42688_FIFO::readFifo() {
+  _useSPIHS = true; // use the high speed SPI for data readout
+  // get the fifo size
+  readRegisters(FIFO_COUNT, 2, _buffer);
+  _fifoSize = (((uint16_t) (_buffer[0]&0x0F)) <<8) + (((uint16_t) _buffer[1]));
+  // read and parse the buffer
+  for (size_t i=0; i < _fifoSize/_fifoFrameSize; i++) {
+    // grab the data from the ICM42688
+    if (readRegisters(FIFO_DATA,_fifoFrameSize,_buffer) < 0) {
+      return -1;
+    }
+    if (_enFifoAccel) {
+      // combine into 16 bit values
+      _accCounts[0] = (((int16_t)_buffer[0]) << 8) | _buffer[1];
+      _accCounts[1] = (((int16_t)_buffer[2]) << 8) | _buffer[3];
+      _accCounts[2] = (((int16_t)_buffer[4]) << 8) | _buffer[5];
+      // transform and convert to double values
+      _axFifo[i] = (((double)(tX[0]*_accCounts[0] + tX[1]*_accCounts[1] + tX[2]*_accCounts[2]) * _accelScale)-_accB[0])*_accS[0];
+      _ayFifo[i] = (((double)(tY[0]*_accCounts[0] + tY[1]*_accCounts[1] + tY[2]*_accCounts[2]) * _accelScale)-_accB[1])*_accS[1];
+      _azFifo[i] = (((double)(tZ[0]*_accCounts[0] + tZ[1]*_accCounts[1] + tZ[2]*_accCounts[2]) * _accelScale)-_accB[2])*_accS[2];
+      _aSize = _fifoSize/_fifoFrameSize;
+    }
+    if (_enFifoTemp) {
+      // combine into 16 bit values
+      _tcounts = (((int16_t)_buffer[0 + _enFifoAccel*6]) << 8) | _buffer[1 + _enFifoAccel*6];
+      // transform and convert to double values
+      _tFifo[i] = ((((double) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
+      _tSize = _fifoSize/_fifoFrameSize;
+    }
+    if (_enFifoGyro) {
+      // combine into 16 bit values
+      _gyroCounts[0] = (((int16_t)_buffer[0 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[1 + _enFifoAccel*6 + _enFifoTemp*2];
+      _gyroCounts[1] = (((int16_t)_buffer[2 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[3 + _enFifoAccel*6 + _enFifoTemp*2];
+      _gyroCounts[2] = (((int16_t)_buffer[4 + _enFifoAccel*6 + _enFifoTemp*2]) << 8) | _buffer[5 + _enFifoAccel*6 + _enFifoTemp*2];
+      // transform and convert to double values
+      _gxFifo[i] = ((double)(tX[0]*_gyroCounts[0] + tX[1]*_gyroCounts[1] + tX[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[0];
+      _gyFifo[i] = ((double)(tY[0]*_gyroCounts[0] + tY[1]*_gyroCounts[1] + tY[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[1];
+      _gzFifo[i] = ((double)(tZ[0]*_gyroCounts[0] + tZ[1]*_gyroCounts[1] + tZ[2]*_gyroCounts[2]) * _gyroScale) - _gyroB[2];
+      _gSize = _fifoSize/_fifoFrameSize;
+    }
+  }
+  return 1;
+}
+
+/* returns the accelerometer FIFO size and data in the x direction, m/s/s */
+void ICM42688_FIFO::getFifoAccelX_mss(size_t *size,double* data) {
+  *size = _aSize;
+  memcpy(data,_axFifo,_aSize*sizeof(double));
+}
+
+/* returns the accelerometer FIFO size and data in the y direction, m/s/s */
+void ICM42688_FIFO::getFifoAccelY_mss(size_t *size,double* data) {
+  *size = _aSize;
+  memcpy(data,_ayFifo,_aSize*sizeof(double));
+}
+
+/* returns the accelerometer FIFO size and data in the z direction, m/s/s */
+void ICM42688_FIFO::getFifoAccelZ_mss(size_t *size,double* data) {
+  *size = _aSize;
+  memcpy(data,_azFifo,_aSize*sizeof(double));
+}
+
+/* returns the gyroscope FIFO size and data in the x direction, rad/s */
+void ICM42688_FIFO::getFifoGyroX_rads(size_t *size,double* data) {
+  *size = _gSize;
+  memcpy(data,_gxFifo,_gSize*sizeof(double));
+}
+
+/* returns the gyroscope FIFO size and data in the y direction, rad/s */
+void ICM42688_FIFO::getFifoGyroY_rads(size_t *size,double* data) {
+  *size = _gSize;
+  memcpy(data,_gyFifo,_gSize*sizeof(double));
+}
+
+/* returns the gyroscope FIFO size and data in the z direction, rad/s */
+void ICM42688_FIFO::getFifoGyroZ_rads(size_t *size,double* data) {
+  *size = _gSize;
+  memcpy(data,_gzFifo,_gSize*sizeof(double));
+}
+
+/* returns the die temperature FIFO size and data, C */
+void ICM42688_FIFO::getFifoTemperature_C(size_t *size,double* data) {
+  *size = _tSize;
+  memcpy(data,_tFifo,_tSize*sizeof(double));
 }
