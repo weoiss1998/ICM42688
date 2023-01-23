@@ -8,8 +8,9 @@
   Library may be used freely and without limit with attribution.
 
 */
-
+#ifndef ICM42688_h
 #define ICM42688_h
+
 
 #include "Arduino.h"
 #include <Wire.h>
@@ -222,9 +223,9 @@ float  STratio[7] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};          // self
 float _aRes, _gRes;
 float ax, ay, az, gx, gy, gz;   
   private:
-  float _aRes, _gRes;
   int writeRegister(uint8_t subAddress, uint8_t data);
   int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
   int16_t ICM42688Data[7]; 
 };
 
+#endif
