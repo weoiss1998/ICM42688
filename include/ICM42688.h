@@ -1,10 +1,23 @@
-#ifndef ICM42688_H
-#define ICM42688_H
+/* 01/14/2022 Copyright Tlera Corporation
+
+    Created by Kris Winer
+
+  This sketch uses SDA/SCL on pins 21/20 (ladybug default), respectively, and it uses the Ladybug STM32L432 Breakout Board.
+  The ICM42688 is a combo sensor with embedded accel and gyro, here used as 6 DoF in a 9 DoF absolute orientation solution.
+
+  Library may be used freely and without limit with attribution.
+
+*/
+
+#define ICM42688_h
 
 #include "Arduino.h"
-#include "Wire.h"    // I2C library
-#include "SPI.h"     // SPI library
+#include <Wire.h>
 
+
+/* ICM42688 registers
+https://media.digikey.com/pdf/Data%20Sheets/TDK%20PDFs/ICM-42688-P_DS_Rev1.2.pdf
+*/
 // User Bank 0
 #define ICM42688_DEVICE_CONFIG             0x11
 #define ICM42688_DRIVE_CONFIG              0x13
@@ -171,292 +184,47 @@
 #define GODR_25Hz   0x0A
 #define GODR_12_5Hz 0x0B
 
-#define CLOCK_SEL_PLL 0x01
-#define PWR_RESET 0x80
-#define SEN_ENABLE 0x0F
-
-#define BANK0  0x00
-#define BANK1  0x01
-#define BANK2  0x02
-#define BANK3  0x03
-#define BANK4  0x04
-
-
-class ICM42688{
+ 
+class ICM42688
+{
   public:
-    enum GyroRange
-    {
-      GYRO_RANGE_15_625DPS,
-      GYRO_RANGE_31_25DPS,
-      GYRO_RANGE_62_5DPS,
-      GYRO_RANGE_125DPS,
-      GYRO_RANGE_250DPS,
-      GYRO_RANGE_500DPS,
-      GYRO_RANGE_1000DPS,
-      GYRO_RANGE_2000DPS
-    };
-    enum AccelRange
-    {
-      ACCEL_RANGE_2G,
-      ACCEL_RANGE_4G,
-      ACCEL_RANGE_8G,
-      ACCEL_RANGE_16G
-    };
-    enum DLPWBandWith{
-      DLPF_BANDWIDTH_4000HZ,
-      DLPF_BANDWIDTH_170HZ,
-      DLPF_BANDWIDTH_82HZ,
-      DLPF_BANDWIDTH_40HZ,
-      DLPF_BANDWIDTH_20HZ,
-      DLPF_BANDWIDTH_10HZ,
-      DLPF_BANDWIDTH_5HZ
-    };
-   
-    ICM42688(TwoWire &bus,uint8_t address);
-    ICM42688(SPIClass &bus,uint8_t csPin);
-    int begin(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
-    int init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
-    int setAccelRange(AccelRange range);
-    int setGyroRange(GyroRange range);
-    int setFilters(bool gyroFilters, bool accFilters);
-    int enableDataReadyInterrupt();
-    int disableDataReadyInterrupt();
-    uint8_t isInterrupted();
-    int setUseSPIHS(bool useSPIHS);
-    int readSensor();
-    int readAcc(double* acc);
-    int readGyro(double* gyro);
-    int readAccGyro(double* accGyro);
-    double getAccelX_mss();
-    double getAccelY_mss();
-    double getAccelZ_mss();
-    double getGyroX_rads();
-    double getGyroY_rads();
-    double getGyroZ_rads();
-    double getGyroX_dps();
-    double getGyroY_dps();
-    double getGyroZ_dps();
-    double getTemperature_C();
+  ICM42688(TwoWire &bus,uint8_t address);  
+  int begin(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);  
+  int readSensor();
+  float getAres(uint8_t Ascale);
+  float getGres(uint8_t Gscale);
+  uint8_t getChipID();
+  void init(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
+  int init_neu(uint8_t Ascale, uint8_t Gscale, uint8_t AODR, uint8_t GODR);
+  void offsetBias(float * dest1, float * dest2);
+  void reset();
+  uint8_t DRStatus();  
+  void selfTest(int16_t * accelDiff, int16_t * gyroDiff, float * ratio);
+  void readData(int16_t * destination);
+  float getAccX();
+  float getAccY();
+  float getAccZ();
+  float getGyroX();
+  float getGyroY();
+  float getGyroZ();
 
-    int calibrateGyro();
-    double getGyroBiasX_rads();
-    double getGyroBiasY_rads();
-    double getGyroBiasZ_rads();
-    void setGyroBiasX_rads(double bias);
-    void setGyroBiasY_rads(double bias);
-    void setGyroBiasZ_rads(double bias);
-    int calibrateAccel();
-    double getAccelBiasX_mss();
-    double getAccelScaleFactorX();
-    double getAccelBiasY_mss();
-    double getAccelScaleFactorY();
-    double getAccelBiasZ_mss();
-    double getAccelScaleFactorZ();
-    void setAccelCalX(double bias,double scaleFactor);
-    void setAccelCalY(double bias,double scaleFactor);
-    void setAccelCalZ(double bias,double scaleFactor);
-    int setDlpfBandwidth(DLPWBandWith bw);
-    void correctAccelData();
-    void reset();
-    void readData(int16_t * destination);
-    void offsetBias(float * dest1, float * dest2);
-    void selfTest(int16_t * accelDiff, int16_t * gyroDiff, float * ratio);
-    void calibrateAll();
-    float getGres(uint8_t Gscale);
-    float getAres(uint8_t Ascale);
-     // data counts
-    int16_t _accCounts[3] = {};
-
-/* Specify sensor parameters (sample rate is twice the bandwidth)
- * choices are:
-      AFS_2G, AFS_4G, AFS_8G, AFS_16G  
-      GFS_15_625DPS, GFS_31_25DPS, GFS_62_5DPS, GFS_125DPS, GFS_250DPS, GFS_500DPS, GFS_1000DPS, GFS_2000DPS 
-      AODR_1_5625Hz, AODR_3_125Hz, AODR_6_25Hz, AODR_50AODR_12_5Hz, AODR_25Hz, AODR_50Hz, AODR_100Hz, AODR_200Hz, AODR_500Hz, 
-      AODR_1kHz, AODR_2kHz, AODR_4kHz, AODR_8kHz, AODR_16kHz, AODR_32kHz
-      GODR_12_5Hz, GODR_25Hz, GODR_50Hz, GODR_100Hz, GODR_200Hz, GODR_500Hz, GODR_1kHz, GODR_2kHz, GODR_4kHz, GODR_8kHz, GODR_16kHz, GODR_32kHz
-*/ 
-uint8_t Ascale = AFS_2G, Gscale = GFS_250DPS, AODR = AODR_200Hz, GODR = GODR_200Hz;
-
-  protected:
+    protected:
     // i2c
     uint8_t _address = 0;
     TwoWire *_i2c = {};
     const uint32_t _i2cRate = 400000; // 400 kHz
     size_t _numBytes = 0; // number of bytes received from I2C
-    // spi
-    SPIClass *_spi = {};
-    uint8_t _csPin = 0;
-    bool _useSPI = false;
-    bool _useSPIHS = false;
-    const uint8_t SPI_READ = 0x80;
-    const uint32_t SPI_LS_CLOCK = 1000000; // 1 MHz
-    const uint32_t SPI_HS_CLOCK = 8000000; // 8 MHz
-    // buffer for reading from sensor
-    uint8_t _buffer[15] = {};
-    // data counts
-    int16_t _gyroCounts[3] = {};
-    int16_t _tcounts = 0;
-           // data buffer
-    double _acc[3] = {};
-    double _gyro[3] = {};
-
-    double _t = 0.0;
-    uint8_t _isInterrupted = 0;
-    // scale factors
-    double _accelScale = 0.0;
-    double _gyroScale = 0.0;
-    const double _tempScale = 333.87f;
-    const double _tempOffset = 21.0f;
-    // configuration
-    AccelRange _accelRange;
-    GyroRange _gyroRange;
-    // gyro bias estimation
-    size_t _numSamples = 100;
-    double _gyroBD[3] = {};
-    double _gyroB[3] = {};
-    // accel bias and scale factor estimation
-    double _accBD[3] = {};
-    double _accB[3] = {};
-    double _accS[3] = {1.0, 1.0, 1.0};
-    double _accMax[3] = {};
-    double _accMin[3] = {};
-    // transformation matrix
-    const int16_t tX[3] = {0,  1,  0};
-    const int16_t tY[3] = {1,  0,  0};
-    const int16_t tZ[3] = {0,  0, -1};
-    // constants
-    const double G = 9.807f;
-    const double _d2r = 3.14159265359f/180.0f;
-    const double _r2d = 180.0f/3.14159265359f;
-    // ICM42688 registers
-    // BANK 0
-    const uint8_t ACCEL_OUT = 0x1F;
-    const uint8_t GYRO_OUT = 0x25;
-    const uint8_t TEMP_OUT = 0x1D;
-
-    const uint8_t ACCEL_FS_SEL_2G = 0x80; // TODO: 0x60 in datasheet
-    const uint8_t ACCEL_FS_SEL_4G = 0x60; // TODO: 0x40 in datasheet
-    const uint8_t ACCEL_FS_SEL_8G = 0x40; // TODO: 0x20 in datasheet
-    const uint8_t ACCEL_FS_SEL_16G = 0x20; // TODO: 0x00 in datasheet
-    const uint8_t ACCEL_ODR_32KHZ = 0x01;
-    const uint8_t ACCEL_ODR_16KHZ = 0x02;
-    const uint8_t ACCEL_ODR_8KHZ = 0x03;
-    const uint8_t ACCEL_ODR_4KHZ = 0x04;
-    const uint8_t ACCEL_ODR_2KHZ = 0x05;
-    const uint8_t ACCEL_ODR_1KHZ = 0x06;
-    const uint8_t ACCEL_ODR_200HZ = 0x07;
-    const uint8_t ACCEL_ODR_100HZ = 0x08;
-    const uint8_t ACCEL_ODR_50HZ = 0x09;
-    const uint8_t ACCEL_ODR_25HZ = 0x0A;
-    const uint8_t ACCEL_ODR_12_5HZ = 0x0B;
-    const uint8_t ACCEL_ODR_6_25HZ = 0x0C;
-    const uint8_t ACCEL_ODR_3_125HZ = 0x0D;
-    const uint8_t ACCEL_ODR_1_5625HZ = 0x0E;
-    const uint8_t ACCEL_ODR_500HZ = 0x0F;
-
-    const uint8_t GYRO_FS_SEL_15_625DPS = 0xE0;
-    const uint8_t GYRO_FS_SEL_31_25DPS = 0xC0;
-    const uint8_t GYRO_FS_SEL_62_5DPS = 0xA0;
-    const uint8_t GYRO_FS_SEL_125DPS = 0x80;
-    const uint8_t GYRO_FS_SEL_250DPS = 0x60;
-    const uint8_t GYRO_FS_SEL_500DPS = 0x40;
-    const uint8_t GYRO_FS_SEL_1000DPS = 0x20;
-    const uint8_t GYRO_FS_SEL_2000DPS = 0x00;
-    const uint8_t GYRO_ODR_32KHZ = 0x01;
-    const uint8_t GYRO_ODR_16KHZ = 0x02;
-    const uint8_t GYRO_ODR_8KHZ = 0x03;
-    const uint8_t GYRO_ODR_4KHZ = 0x04;
-    const uint8_t GYRO_ODR_2KHZ = 0x05;
-    const uint8_t GYRO_ODR_1KHZ = 0x06;
-    const uint8_t GYRO_ODR_200HZ = 0x07;
-    const uint8_t GYRO_ODR_100HZ = 0x08;
-    const uint8_t GYRO_ODR_50HZ = 0x09;
-    const uint8_t GYRO_ODR_25HZ = 0x0A;
-    const uint8_t GYRO_ODR_12_5HZ = 0x0B;
-    const uint8_t GYRO_ODR_500HZ = 0x0F;
-
-    const uint8_t GYRO_CONFIG1 = 0x51;
-    const uint8_t TEMP_FILT_BW_4000HZ = 0b00000000;
-    const uint8_t TEMP_FILT_BW_170HZ = 0b00100000;
-    const uint8_t TEMP_FILT_BW_82HZ = 0b01000000;
-    const uint8_t TEMP_FILT_BW_40HZ = 0b01100000;
-    const uint8_t TEMP_FILT_BW_20HZ = 0b10000000;
-    const uint8_t TEMP_FILT_BW_10HZ = 0b10100000;
-    const uint8_t TEMP_FILT_BW_5HZ = 0b11000000;
-
-    const uint8_t INT_CONFIG = 0x14;
-    const uint8_t INT_HOLD_ANY = 0x08;
-    const uint8_t INT_PULSE_100us = 0x03;
-    const uint8_t INT_SOURCE0 = 0x65;
-    const uint8_t RESET_DONE_INT1_EN = 0x10;
-    const uint8_t UI_DRDY_INT1_EN = 0x10;
-    const uint8_t INT_STATUS = 0x2D;
-
-
-
-    const uint8_t WHO_AM_I = 0x75;
-    const uint8_t FIFO_EN = 0x23;
-    const uint8_t FIFO_TEMP_EN = 0x04;
-    const uint8_t FIFO_GYRO = 0x02;
-    const uint8_t FIFO_ACCEL = 0x01;
-    const uint8_t FIFO_COUNT = 0x2E;
-    const uint8_t FIFO_DATA = 0x30;
-
-
-    // BANK 1
-    const uint8_t GYRO_NF_ENABLE = 0x00;
-    const uint8_t GYRO_NF_DISABLE = 0x01;
-    const uint8_t GYRO_AAF_ENABLE = 0x00;
-    const uint8_t GYRO_AAF_DISABLE = 0x02;
-
-    // BANK 2
-    const uint8_t ACCEL_AAF_ENABLE = 0x00;
-    const uint8_t ACCEL_AAF_DISABLE = 0x01;
-
-
-    // BANK 4
-    const uint8_t ACCEL_OFFSET_Z = 0x7E;
-    // private functions
-    int writeRegister(uint8_t subAddress, uint8_t data);
-    int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
-    int whoAmI();
-    float aRes, gRes;                                                        // scale resolutions per LSB for the accel and gyro sensor2
-float accelBias[3] = {0.0f, 0.0f,0.0f}, gyroBias[3] = {0.0f, 0.0f,0.0f}; // offset biases for the accel and gyro
+     uint8_t _buffer[15] = {};
+     float aRes, gRes;  
+     float accelBias[3] = {0.0f, 0.0f,0.0f}, gyroBias[3] = {0.0f, 0.0f,0.0f}; // offset biases for the accel and gyro
 int16_t accelDiff[3] = {0, 0, 0}, gyroDiff[3] = {0, 0, 0};               // difference betwee ST and normal values
 float  STratio[7] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};          // self-test results for the accel and gyro
 float _aRes, _gRes;
+float ax, ay, az, gx, gy, gz;   
+  private:
+  float _aRes, _gRes;
+  int writeRegister(uint8_t subAddress, uint8_t data);
+  int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
+  int16_t ICM42688Data[7]; 
 };
 
-class ICM42688_FIFO: public ICM42688 {
-  public:
-    using ICM42688::ICM42688;
-    int enableFifo(bool accel,bool gyro,bool temp);
-    int readFifo();
-    void getFifoAccelX_mss(size_t *size,double* data);
-    void getFifoAccelY_mss(size_t *size,double* data);
-    void getFifoAccelZ_mss(size_t *size,double* data);
-    void getFifoGyroX_rads(size_t *size,double* data);
-    void getFifoGyroY_rads(size_t *size,double* data);
-    void getFifoGyroZ_rads(size_t *size,double* data);
-    void getFifoTemperature_C(size_t *size,double* data);
-    void selfTest(int16_t * accelDiff, int16_t * gyroDiff, float * ratio);
-  protected:
-    // fifo
-    bool _enFifoAccel = false;
-    bool _enFifoGyro = false;
-    bool _enFifoTemp = false;
-    size_t _fifoSize = 0;
-    size_t _fifoFrameSize = 0;
-    double _axFifo[85] = {};
-    double _ayFifo[85] = {};
-    double _azFifo[85] = {};
-    size_t _aSize = 0;
-    double _gxFifo[85] = {};
-    double _gyFifo[85] = {};
-    double _gzFifo[85] = {};
-    size_t _gSize = 0;
-    double _tFifo[256] = {};
-    size_t _tSize = 0;
-};
-
-#endif // ICM42688_H
