@@ -925,22 +925,9 @@ reset();  // software reset ICM42688 to default registers
    Serial.print("Gy ratio: "); Serial.print(STratio[5]*100.0f, 0); Serial.println(" %");
    Serial.print("Gz ratio: "); Serial.print(STratio[6]*100.0f, 0); Serial.println(" %");
    Serial.println("Should be between 50 and 150%");
-   delay(2000);
+   delay(500);
       
-   // get sensor resolutions for user settings, only need to do this once
-   aRes = getAres(Ascale);
-   gRes = getGres(Gscale);
 
-  
-   init_neu(Ascale, Gscale, AODR, GODR);
-
-   Serial.println("Calculate accel and gyro offset biases: keep sensor flat and motionless!");
-   delay(2000);
-
-   offsetBias(accelBias, gyroBias);
-   Serial.println("accel biases (mg)"); Serial.println(1000.0f * accelBias[0]); Serial.println(1000.0f * accelBias[1]); Serial.println(1000.0f * accelBias[2]);
-   Serial.println("gyro biases (dps)"); Serial.println(gyroBias[0]); Serial.println(gyroBias[1]); Serial.println(gyroBias[2]);
-   delay(500); 
 }
 
 float ICM42688::getAres(uint8_t Ascale) {
@@ -1043,6 +1030,7 @@ calibrateAll();
   
   writeRegister( ICM42688_GYRO_ACCEL_CONFIG0,  0x44); // set gyro and accel bandwidth to ODR/10
  
+ delay(2000);
    // interrupt handling
 /*  writeRegister( ICM42688_INT_CONFIG, 0x18 | 0x03 );      // push-pull, pulsed, active HIGH interrupts  
   uint8_t temp = _i2c_bus->readByte(ICM42688_ADDRESS, ICM42688_INT_CONFIG1);     // clear bit 4 to allow async interrupt reset (required for proper interrupt operation)
@@ -1056,6 +1044,7 @@ calibrateAll();
   
 
   offsetBias(accelBias, gyroBias);
+  delay(500); 
 
   // // disable inner filters (Notch filter, Anti-alias filter, UI filter block)
   // if (setFilters(false, false) < 0) {
